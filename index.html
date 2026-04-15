@@ -1,1 +1,238 @@
-Test
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histogram czasów realizacji</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #chartContainer {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Histogram czasów realizacji według rozmiaru</h1>
+    <div id="chartContainer">
+        <canvas id="histogramChart"></canvas>
+    </div>
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FF6384;"></div>
+            <span>S (Small)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #36A2EB;"></div>
+            <span>M (Medium)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FFCE56;"></div>
+            <span>L (Large)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #4BC0C0;"></div>
+            <span>XL (Extra Large)</span>
+        </div>
+    </div>
+
+    <script>
+        // Dane z CSV
+        const csvData = `Deklarowany rozmiar;Czas realizacji
+S;49
+S;48
+S;87
+M;57
+M;148
+S;53
+S;45
+M;145
+L;105
+S;5
+L;163
+S;43
+M;415
+L;123
+M;103
+L;104
+L;302
+L;158
+L;98
+S;52
+M;95
+S;70
+M;95
+M;101
+M;57
+M;57
+S;53
+L;137
+S;73
+M;60
+S;126
+M;57
+L;124
+M;75
+M;89
+S;44`;
+
+        // Parsowanie danych
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const data = { S: [], M: [], L: [], XL: [] };
+            
+            for (let i = 1; i < lines.length; i++) {
+                const [size, time] = lines[i].split(';');
+                const trimmedSize = size.trim();
+                const timeValue = parseInt(time);
+                
+                if (data[trimmedSize] !== undefined) {
+                    data[trimmedSize].push(timeValue);
+                }
+            }
+            
+            return data;
+        }
+
+        // Tworzenie histogramu
+        function createHistogram(data) {
+            // Definiowanie kolorów dla każdego rozmiaru
+            const colors = {
+                S: 'rgba(255, 99, 132, 0.7)',
+                M: 'rgba(54, 162, 235, 0.7)',
+                L: 'rgba(255, 206, 86, 0.7)',
+                XL: 'rgba(75, 192, 192, 0.7)'
+            };
+
+            const borderColors = {
+                S: 'rgba(255, 99, 132, 1)',
+                M: 'rgba(54, 162, 235, 1)',
+                L: 'rgba(255, 206, 86, 1)',
+                XL: 'rgba(75, 192, 192, 1)'
+            };
+
+            // Przygotowanie danych dla każdego rozmiaru
+            const datasets = [];
+            const allTimes = [];
+            
+            // Zbieranie wszystkich czasów do określenia zakresu
+            Object.values(data).forEach(times => {
+                allTimes.push(...times);
+            });
+            
+            const minTime = 0;
+            const maxTime = Math.ceil(Math.max(...allTimes) / 50) * 50;
+            const binSize = 25;
+            const bins = [];
+            
+            for (let i = minTime; i <= maxTime; i += binSize) {
+                bins.push(i);
+            }
+
+            // Tworzenie datasetu dla każdego rozmiaru
+            Object.keys(data).forEach(size => {
+                if (data[size].length > 0) {
+                    const histogram = new Array(bins.length - 1).fill(0);
+                    
+                    data[size].forEach(time => {
+                        for (let i = 0; i < bins.length - 1; i++) {
+                            if (time >= bins[i] && time < bins[i + 1]) {
+                                histogram[i]++;
+                                break;
+                            }
+                        }
+                    });
+
+                    datasets.push({
+                        label: `Rozmiar ${size}`,
+                        data: histogram,
+                        backgroundColor: colors[size],
+                        borderColor: borderColors[size],
+                        borderWidth: 1
+                    });
+                }
+            });
+
+            // Etykiety dla osi X
+            const labels = bins.slice(0, -1).map((bin, i) => 
+                `${bin}-${bins[i + 1]}`
+            );
+
+            return { labels, datasets };
+        }
+
+        // Inicjalizacja wykresu
+        const parsedData = parseCSV(csvData);
+        const histogramData = createHistogram(parsedData);
+
+        const ctx = document.getElementById('histogramChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: histogramData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Rozkład czasów realizacji według rozmiaru zadania',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Czas realizacji (dni)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Liczba zadań'
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
