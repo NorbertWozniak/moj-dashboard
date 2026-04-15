@@ -678,11 +678,11 @@ S;44`;
             const timeInput = document.getElementById('timeInput');
             
             const size = sizeSelect.value;
-            const time = parseInt(timeInput.value);
+            const time = Number(timeInput.value);
             
             // Walidacja
-            if (!time || time < 1) {
-                alert('Proszę wprowadzić prawidłową liczbę dni (minimum 1).');
+            if (isNaN(time) || time < 1) {
+                showNotification('Proszę wprowadzić prawidłową liczbę dni (minimum 1).');
                 return;
             }
             
