@@ -285,6 +285,19 @@
             }
         );
 
+        // Plugin to add dark background to chart
+        const chartBackgroundPlugin = {
+            id: 'customCanvasBackgroundColor',
+            beforeDraw: (chart, args, options) => {
+                const {ctx} = chart;
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = options.color || '#0f172a';
+                ctx.fillRect(0, 0, chart.width, chart.height);
+                ctx.restore();
+            }
+        };
+
         // Create chart
         const ctx = document.getElementById('scatterChart').getContext('2d');
         const scatterChart = new Chart(ctx, {
@@ -292,11 +305,15 @@
             data: {
                 datasets: datasets
             },
+            plugins: [chartBackgroundPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
                 aspectRatio: 2,
                 plugins: {
+                    customCanvasBackgroundColor: {
+                        color: '#0f172a'
+                    },
                     legend: {
                         display: true,
                         position: 'top',
@@ -324,6 +341,9 @@
                             }
                         }
                     }
+                },
+                layout: {
+                    padding: 20
                 },
                 scales: {
                     x: {
