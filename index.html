@@ -6,96 +6,203 @@
     <title>Histogram czasów realizacji</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
         h1 {
             text-align: center;
-            color: #333;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         #chartContainer {
             background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
         }
         .legend {
             display: flex;
             justify-content: center;
             margin-top: 20px;
-            gap: 20px;
+            gap: 30px;
+            flex-wrap: wrap;
         }
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            padding: 8px 16px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            transition: transform 0.2s;
+        }
+        .legend-item:hover {
+            transform: scale(1.05);
         }
         .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 3px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .legend-item span {
+            font-weight: 600;
+            color: #333;
         }
         .statistics {
             margin-top: 30px;
             background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
         }
         .statistics h2 {
             text-align: center;
             color: #333;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            font-size: 2em;
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
         }
         .stats-card {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
         }
         .stats-card h3 {
-            margin: 0 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 3px solid;
-            font-size: 18px;
+            margin: 0 0 20px 0;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 20px;
+            text-align: center;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        .stats-card.size-S {
+            background: linear-gradient(135deg, #ffeef0 0%, #ffc4cf 100%);
         }
         .stats-card.size-S h3 {
-            border-color: #FF6384;
-            color: #FF6384;
+            background: linear-gradient(135deg, #FF6384 0%, #ff4466 100%);
+        }
+        .stats-card.size-M {
+            background: linear-gradient(135deg, #e3f2fd 0%, #b3d9ff 100%);
         }
         .stats-card.size-M h3 {
-            border-color: #36A2EB;
-            color: #36A2EB;
+            background: linear-gradient(135deg, #36A2EB 0%, #2288dd 100%);
+        }
+        .stats-card.size-L {
+            background: linear-gradient(135deg, #fff9e6 0%, #ffe680 100%);
         }
         .stats-card.size-L h3 {
-            border-color: #FFCE56;
-            color: #FFCE56;
+            background: linear-gradient(135deg, #FFCE56 0%, #ffbb33 100%);
+        }
+        .stats-card.size-XL {
+            background: linear-gradient(135deg, #e0f7f7 0%, #99e6e6 100%);
         }
         .stats-card.size-XL h3 {
-            border-color: #4BC0C0;
-            color: #4BC0C0;
+            background: linear-gradient(135deg, #4BC0C0 0%, #33aaaa 100%);
         }
         .stat-row {
             display: flex;
             justify-content: space-between;
-            margin: 8px 0;
-            padding: 5px 0;
+            margin: 10px 0;
+            padding: 8px 12px;
+            background-color: rgba(255,255,255,0.6);
+            border-radius: 6px;
         }
         .stat-label {
-            font-weight: 500;
-            color: #666;
+            font-weight: 600;
+            color: #555;
         }
         .stat-value {
             font-weight: bold;
+            color: #222;
+            font-size: 1.1em;
+        }
+        .data-table-container {
+            margin-top: 30px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .data-table-container h2 {
+            text-align: center;
             color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #667eea;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .size-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            min-width: 40px;
+        }
+        .size-S { background-color: #FF6384; }
+        .size-M { background-color: #36A2EB; }
+        .size-L { background-color: #FFCE56; color: #333; }
+        .size-XL { background-color: #4BC0C0; }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            #chartContainer {
+                padding: 15px;
+            }
+            table {
+                font-size: 0.9em;
+            }
+            th, td {
+                padding: 8px;
+            }
         }
     </style>
 </head>
@@ -126,6 +233,20 @@
     <div class="statistics">
         <h2>Statystyki czasów realizacji</h2>
         <div id="statsContainer" class="stats-grid"></div>
+    </div>
+
+    <div class="data-table-container">
+        <h2>Szczegółowe dane</h2>
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Rozmiar</th>
+                    <th>Czas realizacji (dni)</th>
+                </tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+        </table>
     </div>
 
     <script>
@@ -246,7 +367,7 @@ S;44`;
                         <span class="stat-value">${stat.mean.toFixed(1)} dni</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label">50 percentyl (mediana):</span>
+                        <span class="stat-label">Mediana (50%):</span>
                         <span class="stat-value">${stat.p50.toFixed(1)} dni</span>
                     </div>
                     <div class="stat-row">
@@ -260,6 +381,25 @@ S;44`;
                 `;
                 
                 container.appendChild(card);
+            });
+        }
+
+        // Funkcja do wyświetlania tabeli danych
+        function displayDataTable(data) {
+            const tableBody = document.getElementById('dataTableBody');
+            tableBody.innerHTML = '';
+            
+            let rowNumber = 1;
+            Object.keys(data).forEach(size => {
+                data[size].forEach(time => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${rowNumber++}</td>
+                        <td><span class="size-badge size-${size}">${size}</span></td>
+                        <td>${time}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
             });
         }
 
@@ -337,6 +477,9 @@ S;44`;
         // Obliczanie i wyświetlanie statystyk
         const stats = calculateStats(parsedData);
         displayStats(stats);
+        
+        // Wyświetlanie tabeli danych
+        displayDataTable(parsedData);
 
         const ctx = document.getElementById('histogramChart').getContext('2d');
         new Chart(ctx, {
@@ -344,36 +487,95 @@ S;44`;
             data: histogramData,
             options: {
                 responsive: true,
+                maintainAspectRatio: true,
                 plugins: {
                     title: {
                         display: true,
                         text: 'Rozkład czasów realizacji według rozmiaru zadania',
                         font: {
-                            size: 16
-                        }
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        padding: 20
                     },
                     legend: {
                         display: true,
-                        position: 'top'
+                        position: 'top',
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 13
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        cornerRadius: 6,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y || 0;
+                                return `${label}: ${value} zadań`;
+                            }
+                        }
                     }
                 },
                 scales: {
                     x: {
                         title: {
                             display: true,
-                            text: 'Czas realizacji (dni)'
+                            text: 'Czas realizacji (dni)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: 10
+                        },
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            }
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'Liczba zadań'
+                            text: 'Liczba zadań',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: 10
                         },
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });
