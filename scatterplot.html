@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scatterplot czasów realizacji</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        #chartContainer {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background-color: rgba(0,0,0,0.05);
+            border-radius: 16px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        .legend-item span {
+            font-weight: 600;
+            color: #333;
+        }
+        .percentile-info {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            border-radius: 12px;
+        }
+        .percentile-info h2 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .percentile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .percentile-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            font-weight: 600;
+        }
+        .percentile-card.p50 {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        }
+        .percentile-card.p85 {
+            background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+        }
+        .percentile-card.p95 {
+            background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+        }
+        .percentile-card .value {
+            font-size: 2em;
+            margin: 5px 0;
+        }
+        .percentile-card .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scatterplot czasów realizacji</h1>
+    
+    <div id="chartContainer">
+        <canvas id="scatterChart"></canvas>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FF6384;"></div>
+            <span>S - Małe</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #36A2EB;"></div>
+            <span>M - Średnie</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FFCE56;"></div>
+            <span>L - Duże</span>
+        </div>
+    </div>
+
+    <div class="percentile-info">
+        <h2>Percentyle czasów realizacji</h2>
+        <div class="percentile-grid">
+            <div class="percentile-card p50">
+                <div class="label">50. percentyl</div>
+                <div class="value">88 dni</div>
+            </div>
+            <div class="percentile-card p85">
+                <div class="label">85. percentyl</div>
+                <div class="value">146 dni</div>
+            </div>
+            <div class="percentile-card p95">
+                <div class="label">95. percentyl</div>
+                <div class="value">319 dni</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CSV data
+        const csvData = `Data ukończenia;Deklarowany rozmiar;Czas realizacji
+15.07.2024;S;49
+22.08.2024;S;48
+10.09.2024;S;87
+25.09.2024;M;57
+5.10.2024;M;148
+14.10.2024;S;53
+28.10.2024;S;45
+18.11.2024;M;145
+4.12.2024;L;105
+8.01.2025;S;5
+20.01.2025;L;163
+14.02.2025;S;43
+26.02.2025;M;415
+15.03.2025;L;123
+10.04.2025;M;103
+5.05.2025;L;104
+12.06.2025;L;302
+25.06.2025;L;158
+2.07.2025;L;98
+11.07.2025;S;52
+18.07.2025;M;95
+29.07.2025;S;70
+3.08.2025;M;95
+14.08.2025;M;101
+21.08.2025;M;57
+29.08.2025;M;57
+8.09.2025;S;53
+22.09.2025;L;137
+4.10.2025;S;73
+12.10.2025;M;60
+19.10.2025;S;126
+27.10.2025;M;57
+5.11.2025;L;124
+15.11.2025;M;75
+25.11.2025;M;89
+10.12.2025;S;44`;
+
+        // Parse CSV
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(';');
+            return lines.slice(1).map(line => {
+                const values = line.split(';');
+                return {
+                    date: values[0],
+                    size: values[1],
+                    time: parseInt(values[2])
+                };
+            });
+        }
+
+        // Parse date to timestamp
+        function parseDate(dateStr) {
+            const [day, month, year] = dateStr.split('.');
+            return new Date(year, month - 1, day);
+        }
+
+        // Color mapping
+        const colorMap = {
+            'S': '#FF6384',
+            'M': '#36A2EB',
+            'L': '#FFCE56'
+        };
+
+        // Parse data
+        const data = parseCSV(csvData);
+
+        // Prepare datasets by size
+        const sizes = ['S', 'M', 'L'];
+        const datasets = sizes.map(size => {
+            const filtered = data.filter(d => d.size === size);
+            return {
+                label: `Rozmiar ${size}`,
+                data: filtered.map(d => ({
+                    x: parseDate(d.date),
+                    y: d.time
+                })),
+                backgroundColor: colorMap[size],
+                borderColor: colorMap[size],
+                borderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            };
+        });
+
+        // Calculate min and max dates
+        const dates = data.map(d => parseDate(d.date));
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+
+        // Percentiles
+        const p50 = 88;
+        const p85 = 146;
+        const p95 = 319;
+
+        // Add percentile lines
+        datasets.push(
+            {
+                label: '50. percentyl (88 dni)',
+                data: [
+                    { x: minDate, y: p50 },
+                    { x: maxDate, y: p50 }
+                ],
+                type: 'line',
+                borderColor: '#22c55e',
+                borderWidth: 2,
+                borderDash: [10, 5],
+                pointRadius: 0,
+                fill: false,
+                tension: 0
+            },
+            {
+                label: '85. percentyl (146 dni)',
+                data: [
+                    { x: minDate, y: p85 },
+                    { x: maxDate, y: p85 }
+                ],
+                type: 'line',
+                borderColor: '#f97316',
+                borderWidth: 2,
+                borderDash: [10, 5],
+                pointRadius: 0,
+                fill: false,
+                tension: 0
+            },
+            {
+                label: '95. percentyl (319 dni)',
+                data: [
+                    { x: minDate, y: p95 },
+                    { x: maxDate, y: p95 }
+                ],
+                type: 'line',
+                borderColor: '#ef4444',
+                borderWidth: 2,
+                borderDash: [10, 5],
+                pointRadius: 0,
+                fill: false,
+                tension: 0
+            }
+        );
+
+        // Create chart
+        const ctx = document.getElementById('scatterChart').getContext('2d');
+        const scatterChart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const date = new Date(context[0].parsed.x);
+                                return date.toLocaleDateString('pl-PL');
+                            },
+                            label: function(context) {
+                                if (context.dataset.type === 'line') {
+                                    return context.dataset.label;
+                                }
+                                return `${context.dataset.label}: ${context.parsed.y} dni`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month',
+                            displayFormats: {
+                                month: 'MMM yyyy'
+                            },
+                            tooltipFormat: 'dd.MM.yyyy'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Data ukończenia',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Czas realizacji (dni)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
