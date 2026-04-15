@@ -1,1 +1,382 @@
-Test
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histogram czasów realizacji</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #chartContainer {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        .statistics {
+            margin-top: 30px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .statistics h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .stats-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .stats-card h3 {
+            margin: 0 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid;
+            font-size: 18px;
+        }
+        .stats-card.size-S h3 {
+            border-color: #FF6384;
+            color: #FF6384;
+        }
+        .stats-card.size-M h3 {
+            border-color: #36A2EB;
+            color: #36A2EB;
+        }
+        .stats-card.size-L h3 {
+            border-color: #FFCE56;
+            color: #FFCE56;
+        }
+        .stats-card.size-XL h3 {
+            border-color: #4BC0C0;
+            color: #4BC0C0;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+        }
+        .stat-label {
+            font-weight: 500;
+            color: #666;
+        }
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Histogram czasów realizacji według rozmiaru</h1>
+    <div id="chartContainer">
+        <canvas id="histogramChart"></canvas>
+    </div>
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FF6384;"></div>
+            <span>S (Small)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #36A2EB;"></div>
+            <span>M (Medium)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FFCE56;"></div>
+            <span>L (Large)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #4BC0C0;"></div>
+            <span>XL (Extra Large)</span>
+        </div>
+    </div>
+
+    <div class="statistics">
+        <h2>Statystyki czasów realizacji</h2>
+        <div id="statsContainer" class="stats-grid"></div>
+    </div>
+
+    <script>
+        // Dane z CSV
+        const csvData = `Deklarowany rozmiar;Czas realizacji
+S;49
+S;48
+S;87
+M;57
+M;148
+S;53
+S;45
+M;145
+L;105
+S;5
+L;163
+S;43
+M;415
+L;123
+M;103
+L;104
+L;302
+L;158
+L;98
+S;52
+M;95
+S;70
+M;95
+M;101
+M;57
+M;57
+S;53
+L;137
+S;73
+M;60
+S;126
+M;57
+L;124
+M;75
+M;89
+S;44`;
+
+        // Parsowanie danych
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const data = { S: [], M: [], L: [], XL: [] };
+            
+            for (let i = 1; i < lines.length; i++) {
+                const [size, time] = lines[i].split(';');
+                const trimmedSize = size.trim();
+                const timeValue = parseInt(time);
+                
+                if (data[trimmedSize] !== undefined) {
+                    data[trimmedSize].push(timeValue);
+                }
+            }
+            
+            return data;
+        }
+
+        // Funkcje statystyczne
+        function calculateMean(values) {
+            if (values.length === 0) return 0;
+            const sum = values.reduce((acc, val) => acc + val, 0);
+            return sum / values.length;
+        }
+
+        function calculatePercentile(values, percentile) {
+            if (values.length === 0) return 0;
+            const sorted = [...values].sort((a, b) => a - b);
+            const index = (percentile / 100) * (sorted.length - 1);
+            const lower = Math.floor(index);
+            const upper = Math.ceil(index);
+            const weight = index - lower;
+            
+            if (lower === upper) {
+                return sorted[lower];
+            }
+            
+            return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+        }
+
+        function calculateStats(data) {
+            const stats = {};
+            
+            Object.keys(data).forEach(size => {
+                if (data[size].length > 0) {
+                    stats[size] = {
+                        count: data[size].length,
+                        mean: calculateMean(data[size]),
+                        p50: calculatePercentile(data[size], 50),
+                        p85: calculatePercentile(data[size], 85),
+                        p95: calculatePercentile(data[size], 95)
+                    };
+                }
+            });
+            
+            return stats;
+        }
+
+        function displayStats(stats) {
+            const container = document.getElementById('statsContainer');
+            container.innerHTML = '';
+            
+            Object.keys(stats).forEach(size => {
+                const stat = stats[size];
+                const card = document.createElement('div');
+                card.className = `stats-card size-${size}`;
+                
+                card.innerHTML = `
+                    <h3>Rozmiar ${size}</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Liczba zadań:</span>
+                        <span class="stat-value">${stat.count}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Średnia:</span>
+                        <span class="stat-value">${stat.mean.toFixed(1)} dni</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">50 percentyl (mediana):</span>
+                        <span class="stat-value">${stat.p50.toFixed(1)} dni</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">85 percentyl:</span>
+                        <span class="stat-value">${stat.p85.toFixed(1)} dni</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">95 percentyl:</span>
+                        <span class="stat-value">${stat.p95.toFixed(1)} dni</span>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Tworzenie histogramu
+        function createHistogram(data) {
+            // Definiowanie kolorów dla każdego rozmiaru
+            const colors = {
+                S: 'rgba(255, 99, 132, 0.7)',
+                M: 'rgba(54, 162, 235, 0.7)',
+                L: 'rgba(255, 206, 86, 0.7)',
+                XL: 'rgba(75, 192, 192, 0.7)'
+            };
+
+            const borderColors = {
+                S: 'rgba(255, 99, 132, 1)',
+                M: 'rgba(54, 162, 235, 1)',
+                L: 'rgba(255, 206, 86, 1)',
+                XL: 'rgba(75, 192, 192, 1)'
+            };
+
+            // Przygotowanie danych dla każdego rozmiaru
+            const datasets = [];
+            const allTimes = [];
+            
+            // Zbieranie wszystkich czasów do określenia zakresu
+            Object.values(data).forEach(times => {
+                allTimes.push(...times);
+            });
+            
+            const minTime = 0;
+            const maxTime = Math.ceil(Math.max(...allTimes) / 50) * 50;
+            const binSize = 25;
+            const bins = [];
+            
+            for (let i = minTime; i <= maxTime; i += binSize) {
+                bins.push(i);
+            }
+
+            // Tworzenie datasetu dla każdego rozmiaru
+            Object.keys(data).forEach(size => {
+                if (data[size].length > 0) {
+                    const histogram = new Array(bins.length - 1).fill(0);
+                    
+                    data[size].forEach(time => {
+                        for (let i = 0; i < bins.length - 1; i++) {
+                            if (time >= bins[i] && time < bins[i + 1]) {
+                                histogram[i]++;
+                                break;
+                            }
+                        }
+                    });
+
+                    datasets.push({
+                        label: `Rozmiar ${size}`,
+                        data: histogram,
+                        backgroundColor: colors[size],
+                        borderColor: borderColors[size],
+                        borderWidth: 1
+                    });
+                }
+            });
+
+            // Etykiety dla osi X
+            const labels = bins.slice(0, -1).map((bin, i) => 
+                `${bin}-${bins[i + 1]}`
+            );
+
+            return { labels, datasets };
+        }
+
+        // Inicjalizacja wykresu
+        const parsedData = parseCSV(csvData);
+        const histogramData = createHistogram(parsedData);
+        
+        // Obliczanie i wyświetlanie statystyk
+        const stats = calculateStats(parsedData);
+        displayStats(stats);
+
+        const ctx = document.getElementById('histogramChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: histogramData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Rozkład czasów realizacji według rozmiaru zadania',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Czas realizacji (dni)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Liczba zadań'
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
