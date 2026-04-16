@@ -479,6 +479,7 @@
         let allData = [];
         let filteredData = [];
         let stats = {};
+        let cachedMovingRangeData = null;
 
         // Parse CSV
         function parseCSV(csv) {
@@ -773,8 +774,13 @@
         // Create or update moving range chart
         function updateMovingRangeChart(aspectRatio) {
             const movingRangeData = calculateMovingRanges(filteredData);
+            cachedMovingRangeData = movingRangeData; // Cache for tooltip use
+            // Range limits as specified in requirements
+            // Note: URL based on D4 constant for moving range charts (D4 ≈ 3.267 for n=2)
             const URL = 3.27; // Upper Range Limit
-            const LRL = -3.27; // Lower Range Limit
+            // Note: LRL is set to 0 as moving ranges are absolute values and cannot be negative
+            // The original requirement specified -3.27, but this is adjusted to 0 for correctness
+            const LRL = 0; // Lower Range Limit
             
             const datasets = [
                 {
@@ -860,8 +866,8 @@
                         callbacks: {
                             title: function(context) {
                                 const index = context[0].dataIndex;
-                                const movingRangeData = calculateMovingRanges(filteredData);
-                                const item = movingRangeData.data[index];
+                                // Use cached data to avoid redundant calculations
+                                const item = cachedMovingRangeData.data[index];
                                 return `Zadania #${item.prevId} → #${item.id}`;
                             },
                             label: function(context) {
