@@ -507,13 +507,17 @@
             const cycleTimeMinInput = document.getElementById('cycleTimeMin').value;
             const cycleTimeMaxInput = document.getElementById('cycleTimeMax').value;
 
-            const taskIdMin = taskIdMinInput === '' ? 0 : parseInt(taskIdMinInput);
-            const taskIdMax = taskIdMaxInput === '' ? Infinity : parseInt(taskIdMaxInput);
-            const cycleTimeMin = cycleTimeMinInput === '' ? 0 : parseInt(cycleTimeMinInput);
-            const cycleTimeMax = cycleTimeMaxInput === '' ? Infinity : parseInt(cycleTimeMaxInput);
+            // Parse and validate inputs
+            const taskIdMinParsed = taskIdMinInput === '' ? null : parseInt(taskIdMinInput, 10);
+            const taskIdMaxParsed = taskIdMaxInput === '' ? null : parseInt(taskIdMaxInput, 10);
+            const cycleTimeMinParsed = cycleTimeMinInput === '' ? null : parseInt(cycleTimeMinInput, 10);
+            const cycleTimeMaxParsed = cycleTimeMaxInput === '' ? null : parseInt(cycleTimeMaxInput, 10);
 
-            // Validate parsed values
-            if (isNaN(taskIdMin) || isNaN(taskIdMax) || isNaN(cycleTimeMin) || isNaN(cycleTimeMax)) {
+            // Check for invalid numeric inputs
+            if ((taskIdMinParsed !== null && isNaN(taskIdMinParsed)) ||
+                (taskIdMaxParsed !== null && isNaN(taskIdMaxParsed)) ||
+                (cycleTimeMinParsed !== null && isNaN(cycleTimeMinParsed)) ||
+                (cycleTimeMaxParsed !== null && isNaN(cycleTimeMaxParsed))) {
                 console.warn('Invalid numeric input detected. Using default values.');
                 filteredData = allData;
                 stats = calculateStats(filteredData);
@@ -521,6 +525,12 @@
                 updateChart();
                 return;
             }
+
+            // Use defaults for null values
+            const taskIdMin = taskIdMinParsed !== null ? taskIdMinParsed : 0;
+            const taskIdMax = taskIdMaxParsed !== null ? taskIdMaxParsed : Infinity;
+            const cycleTimeMin = cycleTimeMinParsed !== null ? cycleTimeMinParsed : 0;
+            const cycleTimeMax = cycleTimeMaxParsed !== null ? cycleTimeMaxParsed : Infinity;
 
             filteredData = allData.filter(d => 
                 d.id >= taskIdMin && 
@@ -579,7 +589,7 @@
             const showSigma2 = document.getElementById('toggleSigma2').checked;
             const showSigma3 = document.getElementById('toggleSigma3').checked;
             const highlightOutOfControl = document.getElementById('toggleOutOfControl').checked;
-            const pointSize = parseInt(document.getElementById('pointSize').value);
+            const pointSize = parseInt(document.getElementById('pointSize').value, 10);
             const aspectRatio = parseFloat(document.getElementById('aspectRatio').value);
 
             // Prepare datasets
@@ -833,7 +843,7 @@
             document.getElementById('cycleTimeMin').value = '';
             document.getElementById('cycleTimeMax').value = '';
             
-            document.getElementById('pointSizeValue').textContent = 5;
+            document.getElementById('pointSizeValue').textContent = '5';
             document.getElementById('aspectRatioValue').textContent = '2.5';
             
             filterData();
