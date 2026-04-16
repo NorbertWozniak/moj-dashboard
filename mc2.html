@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prognoza Dostarczenia Epików - Monte Carlo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .subtitle {
+            text-align: center;
+            color: #b0b0b0;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .section-box {
+            background-color: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+        .section-box h2 {
+            color: #4a90e2;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            color: #b0b0b0;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .input-group input[type="date"],
+        .input-group input[type="text"],
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f0f1e;
+            border: 1px solid #4a90e2;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+        .input-group textarea {
+            min-height: 80px;
+            resize: vertical;
+            font-family: monospace;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        table th {
+            background-color: #0f0f1e;
+            color: #4a90e2;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #4a90e2;
+        }
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #2c3e50;
+        }
+        table tr:hover {
+            background-color: rgba(74, 144, 226, 0.1);
+        }
+        table input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            background-color: #0f0f1e;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 0.95em;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+        .focus-scale {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .focus-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .focus-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .focus-option label {
+            cursor: pointer;
+            margin: 0;
+        }
+        .capacity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .capacity-month {
+            background-color: rgba(74, 144, 226, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .capacity-month label {
+            display: block;
+            color: #4a90e2;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .capacity-month select {
+            width: 100%;
+            padding: 6px;
+            background-color: #0f0f1e;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 0.9em;
+        }
+        .results-box {
+            background-color: #16213e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+        .results-box h2 {
+            color: #4a90e2;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+        .result-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #4a90e2;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .result-label {
+            color: #4a90e2;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .result-value {
+            color: #ffffff;
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .result-details {
+            color: #b0b0b0;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        .epic-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .epic-item {
+            background-color: rgba(74, 144, 226, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4a90e2;
+        }
+        .epic-name {
+            color: #4a90e2;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .epic-range {
+            color: #e0e0e0;
+            font-size: 0.9em;
+        }
+        #chartContainer {
+            margin-top: 30px;
+            background-color: #0f0f1e;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .warning-box {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #ffc107;
+        }
+        .info-box {
+            background-color: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid #4a90e2;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #b0b0b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Prognoza Dostarczenia Epików</h1>
+        <div class="subtitle">Symulacja Monte Carlo z danymi historycznymi</div>
+
+        <!-- Daty -->
+        <div class="section-box">
+            <h2>📅 Zakres Czasowy</h2>
+            <div class="grid-2">
+                <div class="input-group">
+                    <label for="startDate">Data Startu</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="input-group">
+                    <label for="endDate">Oczekiwana Data Końca (opcjonalna)</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+        </div>
+
+        <!-- Dane historyczne -->
+        <div class="section-box">
+            <h2>📈 Historyczne Tempo Dostarczania</h2>
+            <div class="info-box">
+                Wprowadź liczbę historyjek (lub części epiku) dostarczonych w kolejnych 2-tygodniowych okresach.
+                Wartości oddziel przecinkami. Przykład: 8, 12, 10, 15, 11, 9, 13
+            </div>
+            <div class="input-group">
+                <label for="historicalData">Dane historyczne (oddzielone przecinkami)</label>
+                <textarea id="historicalData" placeholder="np. 8, 12, 10, 15, 11, 9, 13, 14, 10, 12">8, 12, 10, 15, 11, 9, 13, 14, 10, 12</textarea>
+            </div>
+        </div>
+
+        <!-- Skala skupienia -->
+        <div class="section-box">
+            <h2>🎯 Skala Skupienia Zespołu</h2>
+            <div class="input-group">
+                <label>Wybierz poziom skupienia zespołu</label>
+                <div class="focus-scale">
+                    <div class="focus-option">
+                        <input type="radio" name="focus" id="focus100" value="100" checked>
+                        <label for="focus100">100%</label>
+                    </div>
+                    <div class="focus-option">
+                        <input type="radio" name="focus" id="focus75" value="75">
+                        <label for="focus75">75%</label>
+                    </div>
+                    <div class="focus-option">
+                        <input type="radio" name="focus" id="focus50" value="50">
+                        <label for="focus50">50%</label>
+                    </div>
+                    <div class="focus-option">
+                        <input type="radio" name="focus" id="focus25" value="25">
+                        <label for="focus25">25%</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capacity miesięczne -->
+        <div class="section-box">
+            <h2>📊 Capacity Miesięczne</h2>
+            <div class="info-box">
+                Ustaw procentowe capacity dla każdego miesiąca. 100% oznacza pełną zdolność dostarczania.
+            </div>
+            <div class="capacity-grid" id="capacityGrid">
+                <!-- Dynamicznie generowane miesiące -->
+            </div>
+        </div>
+
+        <!-- Tabela epików -->
+        <div class="section-box">
+            <h2>📦 Epiki do Dostarczenia</h2>
+            <table id="epicsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40%">Nazwa Epiku</th>
+                        <th style="width: 25%">Estymacja Min</th>
+                        <th style="width: 25%">Estymacja Max</th>
+                        <th style="width: 10%">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody id="epicsBody">
+                    <!-- Dynamicznie generowane wiersze -->
+                </tbody>
+            </table>
+            <button class="btn btn-secondary btn-small" onclick="addEpicRow()">+ Dodaj Epik</button>
+        </div>
+
+        <!-- Przycisk do uruchomienia prognozy -->
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="btn" onclick="runForecast()">🚀 Uruchom Prognozę</button>
+        </div>
+
+        <!-- Wyniki -->
+        <div id="resultsSection" style="display: none;">
+            <div class="results-box">
+                <h2>📊 Wyniki Prognozy</h2>
+                
+                <div class="result-card">
+                    <div class="result-label">Data zakończenia (85. percentyl)</div>
+                    <div class="result-value" id="result85"></div>
+                    <div class="result-details" id="result85Details"></div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-label">Data zakończenia (95. percentyl)</div>
+                    <div class="result-value" id="result95"></div>
+                    <div class="result-details" id="result95Details"></div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-label">Podsumowanie Epików</div>
+                    <div class="epic-summary" id="epicSummary"></div>
+                </div>
+
+                <div id="chartContainer">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicjalizacja
+        let chartInstance = null;
+
+        function initializePage() {
+            // Ustaw dzisiejszą datę jako domyślną datę startu
+            const today = new Date();
+            document.getElementById('startDate').valueAsDate = today;
+
+            // Generuj początkowe wiersze epików
+            for (let i = 1; i <= 10; i++) {
+                addEpicRow(`Epik ${i}`);
+            }
+
+            // Generuj capacity dla miesięcy (od maja 2026)
+            generateCapacityMonths();
+        }
+
+        function generateCapacityMonths() {
+            const capacityGrid = document.getElementById('capacityGrid');
+            const months = ['Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+            const months2027 = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+            
+            // 2026 (od maja)
+            for (let i = 0; i < months.length; i++) {
+                const monthDiv = createMonthCapacity(months[i], '2026', i + 5);
+                capacityGrid.appendChild(monthDiv);
+            }
+            
+            // 2027 (cały rok)
+            for (let i = 0; i < months2027.length; i++) {
+                const monthDiv = createMonthCapacity(months2027[i], '2027', i + 1);
+                capacityGrid.appendChild(monthDiv);
+            }
+        }
+
+        function createMonthCapacity(monthName, year, monthNumber) {
+            const div = document.createElement('div');
+            div.className = 'capacity-month';
+            div.innerHTML = `
+                <label>${monthName} ${year}</label>
+                <select data-month="${year}-${monthNumber}">
+                    <option value="100" selected>100%</option>
+                    <option value="75">75%</option>
+                    <option value="50">50%</option>
+                    <option value="25">25%</option>
+                </select>
+            `;
+            return div;
+        }
+
+        function addEpicRow(name = '') {
+            const tbody = document.getElementById('epicsBody');
+            const rowCount = tbody.rows.length + 1;
+            const row = tbody.insertRow();
+            
+            row.innerHTML = `
+                <td><input type="text" value="${name || 'Epik ' + rowCount}" placeholder="Nazwa epiku" style="width: 100%; padding: 8px; background-color: #0f0f1e; border: 1px solid #4a90e2; border-radius: 4px; color: #e0e0e0;"></td>
+                <td><input type="number" min="0" placeholder="Min" class="epic-min"></td>
+                <td><input type="number" min="0" placeholder="Max" class="epic-max"></td>
+                <td><button class="btn btn-secondary btn-small" onclick="removeEpicRow(this)" style="padding: 6px 12px;">Usuń</button></td>
+            `;
+        }
+
+        function removeEpicRow(button) {
+            const row = button.closest('tr');
+            row.remove();
+        }
+
+        function parseHistoricalData() {
+            const dataStr = document.getElementById('historicalData').value;
+            const values = dataStr.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+            return values;
+        }
+
+        function getMonthlyCapacities(startDate, endDate) {
+            const capacities = {};
+            const selects = document.querySelectorAll('.capacity-month select');
+            selects.forEach(select => {
+                const month = select.getAttribute('data-month');
+                capacities[month] = parseFloat(select.value) / 100;
+            });
+            return capacities;
+        }
+
+        function getCapacityForDate(date, capacities) {
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const key = `${year}-${month}`;
+            return capacities[key] || 1.0;
+        }
+
+        function runForecast() {
+            // Zbierz dane
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDateInput = document.getElementById('endDate').value;
+            const endDate = endDateInput ? new Date(endDateInput) : null;
+            
+            if (isNaN(startDate.getTime())) {
+                alert('Proszę wprowadzić prawidłową datę startu');
+                return;
+            }
+
+            const historicalData = parseHistoricalData();
+            if (historicalData.length === 0) {
+                alert('Proszę wprowadzić dane historyczne');
+                return;
+            }
+
+            const focusScale = parseFloat(document.querySelector('input[name="focus"]:checked').value) / 100;
+            const monthlyCapacities = getMonthlyCapacities(startDate, endDate);
+
+            // Zbierz epiki
+            const epics = [];
+            const rows = document.querySelectorAll('#epicsBody tr');
+            rows.forEach(row => {
+                const name = row.cells[0].querySelector('input').value;
+                const min = parseFloat(row.cells[1].querySelector('input').value);
+                const max = parseFloat(row.cells[2].querySelector('input').value);
+                
+                if (name && !isNaN(min) && !isNaN(max) && min > 0 && max >= min) {
+                    epics.push({ name, min, max });
+                }
+            });
+
+            if (epics.length === 0) {
+                alert('Proszę wprowadzić co najmniej jeden epik z prawidłowymi estymacjami');
+                return;
+            }
+
+            // Uruchom symulację Monte Carlo
+            const simulations = 10000;
+            const results = runMonteCarloSimulation(
+                epics,
+                historicalData,
+                focusScale,
+                monthlyCapacities,
+                startDate,
+                simulations
+            );
+
+            // Wyświetl wyniki
+            displayResults(results, epics, startDate);
+        }
+
+        function runMonteCarloSimulation(epics, historicalData, focusScale, monthlyCapacities, startDate, simulations) {
+            const completionDates = [];
+            const sprintLengthDays = 14;
+
+            for (let sim = 0; sim < simulations; sim++) {
+                let totalStories = 0;
+                
+                // Losuj liczbę historyjek dla każdego epiku
+                for (let epic of epics) {
+                    const stories = Math.floor(Math.random() * (epic.max - epic.min + 1)) + epic.min;
+                    totalStories += stories;
+                }
+
+                // Symuluj dostarczanie
+                let storiesDelivered = 0;
+                let currentDate = new Date(startDate);
+                let sprintCount = 0;
+
+                while (storiesDelivered < totalStories) {
+                    // Losuj velocity z danych historycznych
+                    const historicalVelocity = historicalData[Math.floor(Math.random() * historicalData.length)];
+                    
+                    // Oblicz średnie capacity dla tego sprintu (14 dni)
+                    let avgCapacity = 0;
+                    for (let day = 0; day < sprintLengthDays; day++) {
+                        const checkDate = new Date(currentDate);
+                        checkDate.setDate(checkDate.getDate() + day);
+                        avgCapacity += getCapacityForDate(checkDate, monthlyCapacities);
+                    }
+                    avgCapacity /= sprintLengthDays;
+
+                    // Zastosuj focus scale i capacity
+                    const adjustedVelocity = historicalVelocity * focusScale * avgCapacity;
+                    
+                    storiesDelivered += adjustedVelocity;
+                    currentDate.setDate(currentDate.getDate() + sprintLengthDays);
+                    sprintCount++;
+
+                    // Zabezpieczenie przed nieskończoną pętlą
+                    if (sprintCount > 200) break;
+                }
+
+                completionDates.push(new Date(currentDate));
+            }
+
+            // Sortuj daty
+            completionDates.sort((a, b) => a - b);
+
+            // Oblicz percentyle
+            const p85Index = Math.floor(simulations * 0.85);
+            const p95Index = Math.floor(simulations * 0.95);
+
+            return {
+                completionDates,
+                p85Date: completionDates[p85Index],
+                p95Date: completionDates[p95Index],
+                median: completionDates[Math.floor(simulations * 0.5)],
+                p50Date: completionDates[Math.floor(simulations * 0.5)]
+            };
+        }
+
+        function displayResults(results, epics, startDate) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.style.display = 'block';
+
+            // Formatuj daty
+            const formatDate = (date) => {
+                return date.toLocaleDateString('pl-PL', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            };
+
+            const calculateDuration = (start, end) => {
+                const days = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+                const weeks = Math.floor(days / 7);
+                const sprints = Math.floor(days / 14);
+                return { days, weeks, sprints };
+            };
+
+            // 85. percentyl
+            const duration85 = calculateDuration(startDate, results.p85Date);
+            document.getElementById('result85').textContent = formatDate(results.p85Date);
+            document.getElementById('result85Details').innerHTML = `
+                <strong>Czas trwania:</strong> ${duration85.days} dni (${duration85.weeks} tygodni, ${duration85.sprints} sprintów)<br>
+                <strong>Pewność:</strong> 85% szans na ukończenie do tej daty lub wcześniej
+            `;
+
+            // 95. percentyl
+            const duration95 = calculateDuration(startDate, results.p95Date);
+            document.getElementById('result95').textContent = formatDate(results.p95Date);
+            document.getElementById('result95Details').innerHTML = `
+                <strong>Czas trwania:</strong> ${duration95.days} dni (${duration95.weeks} tygodni, ${duration95.sprints} sprintów)<br>
+                <strong>Pewność:</strong> 95% szans na ukończenie do tej daty lub wcześniej
+            `;
+
+            // Podsumowanie epików
+            const epicSummary = document.getElementById('epicSummary');
+            epicSummary.innerHTML = '';
+            epics.forEach(epic => {
+                const epicDiv = document.createElement('div');
+                epicDiv.className = 'epic-item';
+                epicDiv.innerHTML = `
+                    <div class="epic-name">${epic.name}</div>
+                    <div class="epic-range">${epic.min} - ${epic.max} historyjek</div>
+                `;
+                epicSummary.appendChild(epicDiv);
+            });
+
+            // Wykres rozkładu
+            createDistributionChart(results.completionDates, results.p85Date, results.p95Date, startDate);
+
+            // Przewiń do wyników
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function createDistributionChart(completionDates, p85Date, p95Date, startDate) {
+            // Przygotuj dane dla histogramu
+            const histogram = {};
+            completionDates.forEach(date => {
+                const dateStr = date.toISOString().split('T')[0];
+                histogram[dateStr] = (histogram[dateStr] || 0) + 1;
+            });
+
+            const sortedDates = Object.keys(histogram).sort();
+            const counts = sortedDates.map(date => histogram[date]);
+
+            // Przygotuj etykiety
+            const labels = sortedDates.map(dateStr => {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('pl-PL', { month: 'short', day: 'numeric' });
+            });
+
+            // Kolory dla percentyli
+            const backgroundColors = sortedDates.map(dateStr => {
+                const date = new Date(dateStr);
+                if (date <= p85Date) return 'rgba(76, 175, 80, 0.6)';
+                if (date <= p95Date) return 'rgba(255, 193, 7, 0.6)';
+                return 'rgba(244, 67, 54, 0.6)';
+            });
+
+            // Zniszcz poprzedni wykres jeśli istnieje
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('forecastChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Liczba symulacji',
+                        data: counts,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.6', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Rozkład Dat Zakończenia (10,000 symulacji)',
+                            color: '#e0e0e0',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Symulacje: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data zakończenia',
+                                color: '#b0b0b0'
+                            },
+                            ticks: {
+                                color: '#b0b0b0',
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Liczba symulacji',
+                                color: '#b0b0b0'
+                            },
+                            ticks: {
+                                color: '#b0b0b0'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Inicjalizuj stronę po załadowaniu
+        window.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>
