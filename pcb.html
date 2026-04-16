@@ -145,12 +145,200 @@
             padding-left: 20px;
             color: #e0e0e0;
         }
+        .controls {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 30px;
+            background-color: #16213e;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+        .controls h2 {
+            color: #ffffff;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 1.8em;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        .control-group {
+            padding: 20px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1e2a3a 0%, #2d3e50 100%);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .control-group h3 {
+            color: #ffffff;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        .control-item {
+            margin-bottom: 15px;
+        }
+        .control-item:last-child {
+            margin-bottom: 0;
+        }
+        .control-item label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: #e0e0e0;
+            font-size: 0.95em;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+        .control-item label:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        .control-item input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .control-item input[type="number"],
+        .control-item input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background-color: rgba(255,255,255,0.05);
+            color: #e0e0e0;
+            font-size: 0.95em;
+            margin-top: 5px;
+        }
+        .control-item input[type="range"] {
+            padding: 0;
+            cursor: pointer;
+        }
+        .control-label {
+            display: block;
+            color: #b0b0b0;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .range-value {
+            color: #3b82f6;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        .btn-reset {
+            width: 100%;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+        }
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+        }
+        .btn-reset:active {
+            transform: translateY(0);
+        }
+        .filter-range {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .filter-range input {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
     <h1>Process Control Behaviour (PCB)</h1>
     <div class="subtitle">Wykres kontroli procesu - Czas realizacji zadań</div>
     
+    <div class="controls">
+        <h2>Parametry wykresu</h2>
+        <div class="controls-grid">
+            <div class="control-group">
+                <h3>Linie kontrolne</h3>
+                <div class="control-item">
+                    <label>
+                        <input type="checkbox" id="toggleMean" checked>
+                        Pokaż średnią
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label>
+                        <input type="checkbox" id="toggleSigma1" checked>
+                        Pokaż ±1σ (68%)
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label>
+                        <input type="checkbox" id="toggleSigma2" checked>
+                        Pokaż ±2σ (95%)
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label>
+                        <input type="checkbox" id="toggleSigma3" checked>
+                        Pokaż ±3σ (99.7%)
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Wizualizacja</h3>
+                <div class="control-item">
+                    <label>
+                        <input type="checkbox" id="toggleOutOfControl" checked>
+                        Podświetl punkty poza kontrolą
+                    </label>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Rozmiar punktów: <span class="range-value" id="pointSizeValue">5</span></span>
+                    <input type="range" id="pointSize" min="2" max="10" value="5" step="1">
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Proporcje wykresu: <span class="range-value" id="aspectRatioValue">2.5</span></span>
+                    <input type="range" id="aspectRatio" min="1.5" max="4" value="2.5" step="0.1">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Filtrowanie danych</h3>
+                <div class="control-item">
+                    <span class="control-label">Zakres ID zadań:</span>
+                    <div class="filter-range">
+                        <input type="number" id="taskIdMin" placeholder="Min" min="1">
+                        <input type="number" id="taskIdMax" placeholder="Max" min="1">
+                    </div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Zakres czasu realizacji (dni):</span>
+                    <div class="filter-range">
+                        <input type="number" id="cycleTimeMin" placeholder="Min" min="0">
+                        <input type="number" id="cycleTimeMax" placeholder="Max" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Akcje</h3>
+                <div class="control-item">
+                    <button class="btn-reset" onclick="resetControls()">Przywróć domyślne ustawienia</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="chartContainer">
         <canvas id="pcbChart"></canvas>
     </div>
@@ -266,6 +454,12 @@
 29;3.13.2024;4.9.2024;29
 30;3.20.2024;4.9.2024;20`;
 
+        // Global variables
+        let pcbChart = null;
+        let allData = [];
+        let filteredData = [];
+        let stats = {};
+
         // Parse CSV
         function parseCSV(csv) {
             const lines = csv.trim().split('\n');
@@ -294,155 +488,209 @@
             return { mean, stdDev, min, max, n };
         }
 
-        // Parse data
-        const data = parseCSV(csvData);
-        const stats = calculateStats(data);
+        // Filter data based on controls
+        function filterData() {
+            const taskIdMin = parseInt(document.getElementById('taskIdMin').value) || 0;
+            const taskIdMax = parseInt(document.getElementById('taskIdMax').value) || Infinity;
+            const cycleTimeMin = parseInt(document.getElementById('cycleTimeMin').value) || 0;
+            const cycleTimeMax = parseInt(document.getElementById('cycleTimeMax').value) || Infinity;
 
-        // Calculate control limits
-        const upperControl3 = stats.mean + 3 * stats.stdDev;
-        const upperControl2 = stats.mean + 2 * stats.stdDev;
-        const upperControl1 = stats.mean + stats.stdDev;
-        const lowerControl1 = Math.max(0, stats.mean - stats.stdDev);
-        const lowerControl2 = Math.max(0, stats.mean - 2 * stats.stdDev);
-        const lowerControl3 = Math.max(0, stats.mean - 3 * stats.stdDev);
+            filteredData = allData.filter(d => 
+                d.id >= taskIdMin && 
+                d.id <= taskIdMax && 
+                d.cycleTime >= cycleTimeMin && 
+                d.cycleTime <= cycleTimeMax
+            );
 
-        // Identify out of control points
-        const outOfControl = data.filter(d => d.cycleTime > upperControl3 || d.cycleTime < lowerControl3);
+            if (filteredData.length === 0) {
+                filteredData = allData;
+            }
 
-        // Update statistics display
-        document.getElementById('meanValue').textContent = stats.mean.toFixed(1);
-        document.getElementById('stdDevValue').textContent = stats.stdDev.toFixed(1);
-        document.getElementById('minValue').textContent = stats.min;
-        document.getElementById('maxValue').textContent = stats.max;
-        document.getElementById('countValue').textContent = stats.n;
-        document.getElementById('outOfControlValue').textContent = outOfControl.length;
-
-        // Display out of control points
-        if (outOfControl.length > 0) {
-            document.getElementById('alertZone').style.display = 'block';
-            const list = document.getElementById('outOfControlList');
-            outOfControl.forEach(item => {
-                const li = document.createElement('li');
-                li.textContent = `Zadanie #${item.id}: ${item.cycleTime} dni (zakończone: ${item.closed})`;
-                list.appendChild(li);
-            });
+            stats = calculateStats(filteredData);
+            updateStatistics();
+            updateChart();
         }
 
-        // Prepare chart data
-        const chartData = {
-            labels: data.map(d => d.id),
-            datasets: [
+        // Update statistics display
+        function updateStatistics() {
+            const upperControl3 = stats.mean + 3 * stats.stdDev;
+            const lowerControl3 = Math.max(0, stats.mean - 3 * stats.stdDev);
+            const outOfControl = filteredData.filter(d => d.cycleTime > upperControl3 || d.cycleTime < lowerControl3);
+
+            document.getElementById('meanValue').textContent = stats.mean.toFixed(1);
+            document.getElementById('stdDevValue').textContent = stats.stdDev.toFixed(1);
+            document.getElementById('minValue').textContent = stats.min;
+            document.getElementById('maxValue').textContent = stats.max;
+            document.getElementById('countValue').textContent = stats.n;
+            document.getElementById('outOfControlValue').textContent = outOfControl.length;
+
+            // Display out of control points
+            const list = document.getElementById('outOfControlList');
+            list.innerHTML = '';
+            
+            if (outOfControl.length > 0) {
+                document.getElementById('alertZone').style.display = 'block';
+                outOfControl.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = `Zadanie #${item.id}: ${item.cycleTime} dni (zakończone: ${item.closed})`;
+                    list.appendChild(li);
+                });
+            } else {
+                document.getElementById('alertZone').style.display = 'none';
+            }
+        }
+
+        // Create or update chart
+        function updateChart() {
+            const upperControl3 = stats.mean + 3 * stats.stdDev;
+            const upperControl2 = stats.mean + 2 * stats.stdDev;
+            const upperControl1 = stats.mean + stats.stdDev;
+            const lowerControl1 = Math.max(0, stats.mean - stats.stdDev);
+            const lowerControl2 = Math.max(0, stats.mean - 2 * stats.stdDev);
+            const lowerControl3 = Math.max(0, stats.mean - 3 * stats.stdDev);
+
+            // Get control states
+            const showMean = document.getElementById('toggleMean').checked;
+            const showSigma1 = document.getElementById('toggleSigma1').checked;
+            const showSigma2 = document.getElementById('toggleSigma2').checked;
+            const showSigma3 = document.getElementById('toggleSigma3').checked;
+            const highlightOutOfControl = document.getElementById('toggleOutOfControl').checked;
+            const pointSize = parseInt(document.getElementById('pointSize').value);
+            const aspectRatio = parseFloat(document.getElementById('aspectRatio').value);
+
+            // Prepare datasets
+            const datasets = [
                 {
                     label: 'Czas realizacji',
-                    data: data.map(d => d.cycleTime),
+                    data: filteredData.map(d => d.cycleTime),
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.5)',
                     borderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: data.map(d => {
-                        if (d.cycleTime > upperControl3 || d.cycleTime < lowerControl3) {
-                            return '#ef4444'; // Red for out of control
+                    pointRadius: pointSize,
+                    pointHoverRadius: pointSize + 2,
+                    pointBackgroundColor: filteredData.map(d => {
+                        if (highlightOutOfControl && (d.cycleTime > upperControl3 || d.cycleTime < lowerControl3)) {
+                            return '#ef4444';
                         }
                         return '#3b82f6';
                     }),
                     tension: 0.1
-                },
-                {
+                }
+            ];
+
+            if (showMean) {
+                datasets.push({
                     label: 'Średnia',
-                    data: Array(data.length).fill(stats.mean),
+                    data: Array(filteredData.length).fill(stats.mean),
                     borderColor: '#22c55e',
                     borderWidth: 2,
                     pointRadius: 0,
                     fill: false,
                     tension: 0
-                },
-                {
-                    label: '+1σ',
-                    data: Array(data.length).fill(upperControl1),
-                    borderColor: '#fbbf24',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0
-                },
-                {
-                    label: '-1σ',
-                    data: Array(data.length).fill(lowerControl1),
-                    borderColor: '#fbbf24',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0
-                },
-                {
-                    label: '+2σ',
-                    data: Array(data.length).fill(upperControl2),
-                    borderColor: '#f97316',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0
-                },
-                {
-                    label: '-2σ',
-                    data: Array(data.length).fill(lowerControl2),
-                    borderColor: '#f97316',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0
-                },
-                {
-                    label: '+3σ',
-                    data: Array(data.length).fill(upperControl3),
-                    borderColor: '#ef4444',
-                    borderWidth: 2,
-                    borderDash: [10, 5],
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0
-                },
-                {
-                    label: '-3σ',
-                    data: Array(data.length).fill(lowerControl3),
-                    borderColor: '#ef4444',
-                    borderWidth: 2,
-                    borderDash: [10, 5],
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0
-                }
-            ]
-        };
-
-        // Plugin to add dark background to chart
-        const chartBackgroundPlugin = {
-            id: 'customCanvasBackgroundColor',
-            beforeDraw: (chart, args, options) => {
-                const {ctx} = chart;
-                ctx.save();
-                ctx.globalCompositeOperation = 'destination-over';
-                ctx.fillStyle = options.color || '#0f172a';
-                ctx.fillRect(0, 0, chart.width, chart.height);
-                ctx.restore();
+                });
             }
-        };
 
-        // Create chart
-        const ctx = document.getElementById('pcbChart').getContext('2d');
-        const pcbChart = new Chart(ctx, {
-            type: 'line',
-            data: chartData,
-            plugins: [chartBackgroundPlugin],
-            options: {
+            if (showSigma1) {
+                datasets.push(
+                    {
+                        label: '+1σ',
+                        data: Array(filteredData.length).fill(upperControl1),
+                        borderColor: '#fbbf24',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    },
+                    {
+                        label: '-1σ',
+                        data: Array(filteredData.length).fill(lowerControl1),
+                        borderColor: '#fbbf24',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    }
+                );
+            }
+
+            if (showSigma2) {
+                datasets.push(
+                    {
+                        label: '+2σ',
+                        data: Array(filteredData.length).fill(upperControl2),
+                        borderColor: '#f97316',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    },
+                    {
+                        label: '-2σ',
+                        data: Array(filteredData.length).fill(lowerControl2),
+                        borderColor: '#f97316',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    }
+                );
+            }
+
+            if (showSigma3) {
+                datasets.push(
+                    {
+                        label: '+3σ',
+                        data: Array(filteredData.length).fill(upperControl3),
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        borderDash: [10, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    },
+                    {
+                        label: '-3σ',
+                        data: Array(filteredData.length).fill(lowerControl3),
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        borderDash: [10, 5],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0
+                    }
+                );
+            }
+
+            const chartData = {
+                labels: filteredData.map(d => d.id),
+                datasets: datasets
+            };
+
+            if (pcbChart) {
+                pcbChart.data = chartData;
+                pcbChart.options.aspectRatio = aspectRatio;
+                pcbChart.update();
+            } else {
+                const ctx = document.getElementById('pcbChart').getContext('2d');
+                pcbChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    plugins: [chartBackgroundPlugin],
+                    options: getChartOptions(aspectRatio)
+                });
+            }
+        }
+
+        // Chart options
+        function getChartOptions(aspectRatio) {
+            return {
                 responsive: true,
                 maintainAspectRatio: true,
-                aspectRatio: 2.5,
+                aspectRatio: aspectRatio,
                 interaction: {
                     mode: 'index',
                     intersect: false,
@@ -458,17 +706,22 @@
                         callbacks: {
                             title: function(context) {
                                 const index = context[0].dataIndex;
-                                const item = data[index];
+                                const item = filteredData[index];
                                 return `Zadanie #${item.id}`;
                             },
                             afterTitle: function(context) {
                                 const index = context[0].dataIndex;
-                                const item = data[index];
+                                const item = filteredData[index];
                                 return `Rozpoczęte: ${item.started}\nZakończone: ${item.closed}`;
                             },
                             label: function(context) {
                                 if (context.dataset.label === 'Czas realizacji') {
                                     const value = context.parsed.y;
+                                    const upperControl3 = stats.mean + 3 * stats.stdDev;
+                                    const upperControl2 = stats.mean + 2 * stats.stdDev;
+                                    const lowerControl3 = Math.max(0, stats.mean - 3 * stats.stdDev);
+                                    const lowerControl2 = Math.max(0, stats.mean - 2 * stats.stdDev);
+                                    
                                     let status = '';
                                     if (value > upperControl3 || value < lowerControl3) {
                                         status = ' ⚠️ POZA KONTROLĄ';
@@ -529,8 +782,71 @@
                         }
                     }
                 }
+            };
+        }
+
+        // Plugin to add dark background to chart
+        const chartBackgroundPlugin = {
+            id: 'customCanvasBackgroundColor',
+            beforeDraw: (chart, args, options) => {
+                const {ctx} = chart;
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = options.color || '#0f172a';
+                ctx.fillRect(0, 0, chart.width, chart.height);
+                ctx.restore();
             }
+        };
+
+        // Reset controls to defaults
+        function resetControls() {
+            document.getElementById('toggleMean').checked = true;
+            document.getElementById('toggleSigma1').checked = true;
+            document.getElementById('toggleSigma2').checked = true;
+            document.getElementById('toggleSigma3').checked = true;
+            document.getElementById('toggleOutOfControl').checked = true;
+            document.getElementById('pointSize').value = 5;
+            document.getElementById('aspectRatio').value = 2.5;
+            document.getElementById('taskIdMin').value = '';
+            document.getElementById('taskIdMax').value = '';
+            document.getElementById('cycleTimeMin').value = '';
+            document.getElementById('cycleTimeMax').value = '';
+            
+            document.getElementById('pointSizeValue').textContent = 5;
+            document.getElementById('aspectRatioValue').textContent = '2.5';
+            
+            filterData();
+        }
+
+        // Initialize
+        allData = parseCSV(csvData);
+        filteredData = allData;
+        stats = calculateStats(filteredData);
+        updateStatistics();
+        updateChart();
+
+        // Event listeners for controls
+        document.getElementById('toggleMean').addEventListener('change', updateChart);
+        document.getElementById('toggleSigma1').addEventListener('change', updateChart);
+        document.getElementById('toggleSigma2').addEventListener('change', updateChart);
+        document.getElementById('toggleSigma3').addEventListener('change', updateChart);
+        document.getElementById('toggleOutOfControl').addEventListener('change', updateChart);
+        
+        document.getElementById('pointSize').addEventListener('input', function(e) {
+            document.getElementById('pointSizeValue').textContent = e.target.value;
+            updateChart();
         });
+        
+        document.getElementById('aspectRatio').addEventListener('input', function(e) {
+            document.getElementById('aspectRatioValue').textContent = parseFloat(e.target.value).toFixed(1);
+            updateChart();
+        });
+
+        // Event listeners for filters
+        document.getElementById('taskIdMin').addEventListener('change', filterData);
+        document.getElementById('taskIdMax').addEventListener('change', filterData);
+        document.getElementById('cycleTimeMin').addEventListener('change', filterData);
+        document.getElementById('cycleTimeMax').addEventListener('change', filterData);
     </script>
 </body>
 </html>
