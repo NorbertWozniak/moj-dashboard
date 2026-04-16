@@ -383,6 +383,10 @@
             <div class="legend-line" style="background-color: #ec4899;"></div>
             <span>mR średnia</span>
         </div>
+        <div class="legend-item">
+            <div class="legend-line dashed" style="color: #ef4444;"></div>
+            <span>Range Limits (URL/LRL)</span>
+        </div>
     </div>
 
     <div class="statistics">
@@ -775,12 +779,19 @@
         function updateMovingRangeChart(aspectRatio) {
             const movingRangeData = calculateMovingRanges(filteredData);
             cachedMovingRangeData = movingRangeData; // Cache for tooltip use
-            // Range limits as specified in requirements
-            // Note: upperRangeLimit based on D4 constant for moving range charts (D4 ≈ 3.267 for n=2)
-            const upperRangeLimit = 3.27; // Upper Range Limit (URangeL)
-            // Note: lowerRangeLimit is set to 0 as moving ranges are absolute values and cannot be negative
-            // The original requirement specified -3.27, but this is adjusted to 0 for correctness
-            const lowerRangeLimit = 0; // Lower Range Limit (LRangeL)
+            
+            // Calculate range limits using D4 constant for moving range charts
+            // D4 ≈ 3.267 for sample size n=2 in statistical process control
+            const D4 = 3.267;
+            const D3 = 0; // For n=2, D3 = 0
+            
+            // Upper Range Limit: avgMovingRange × D4
+            // Note: Original requirement specified fixed value of 3.27
+            // Dynamic calculation provides more accurate control limits based on actual process variation
+            const upperRangeLimit = movingRangeData.average * D4;
+            
+            // Lower Range Limit: avgMovingRange × D3 (always 0 for n=2)
+            const lowerRangeLimit = movingRangeData.average * D3;
             
             const datasets = [
                 {
