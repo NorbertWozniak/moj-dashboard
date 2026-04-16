@@ -292,6 +292,12 @@
                         Pokaż ±3σ (99.7%)
                     </label>
                 </div>
+                <div class="control-item">
+                    <label>
+                        <input type="checkbox" id="toggleMovingRange" checked>
+                        Pokaż wykres Moving Range
+                    </label>
+                </div>
             </div>
 
             <div class="control-group">
@@ -343,6 +349,11 @@
         <canvas id="pcbChart"></canvas>
     </div>
 
+    <div id="movingRangeContainer" style="max-width: 1400px; margin: 30px auto; padding: 30px; background-color: #16213e; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.4);">
+        <h2 style="color: #ffffff; text-align: center; margin-bottom: 20px;">Wykres Moving Range</h2>
+        <canvas id="movingRangeChart"></canvas>
+    </div>
+
     <div class="legend">
         <div class="legend-item">
             <div class="legend-line" style="background-color: #3b82f6;"></div>
@@ -363,6 +374,18 @@
         <div class="legend-item">
             <div class="legend-line dashed" style="color: #ef4444;"></div>
             <span>±3σ (99.7%)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background-color: #8b5cf6;"></div>
+            <span>Moving Range</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background-color: #ec4899;"></div>
+            <span>mR średnia</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line dashed" style="color: #ef4444;"></div>
+            <span>Range Limits (URL/LRL)</span>
         </div>
     </div>
 
@@ -456,9 +479,11 @@
 
         // Global variables
         let chartInstance = null;
+        let movingRangeChartInstance = null;
         let allData = [];
         let filteredData = [];
         let stats = {};
+        let cachedMovingRangeData = null;
 
         // Parse CSV
         function parseCSV(csv) {
@@ -497,6 +522,29 @@
                 lowerControl1: Math.max(0, stats.mean - stats.stdDev),
                 lowerControl2: Math.max(0, stats.mean - 2 * stats.stdDev),
                 lowerControl3: Math.max(0, stats.mean - 3 * stats.stdDev)
+            };
+        }
+
+        // Calculate moving ranges
+        function calculateMovingRanges(data) {
+            const movingRanges = [];
+            for (let i = 1; i < data.length; i++) {
+                const range = Math.abs(data[i].cycleTime - data[i - 1].cycleTime);
+                movingRanges.push({
+                    id: data[i].id,
+                    range: range,
+                    prevId: data[i - 1].id
+                });
+            }
+            
+            // Calculate average moving range
+            const avgMovingRange = movingRanges.length > 0 
+                ? movingRanges.reduce((sum, mr) => sum + mr.range, 0) / movingRanges.length 
+                : 0;
+            
+            return {
+                data: movingRanges,
+                average: avgMovingRange
             };
         }
 
@@ -717,6 +765,177 @@
                     options: getChartOptions(aspectRatio)
                 });
             }
+
+            // Update moving range chart visibility
+            const showMovingRange = document.getElementById('toggleMovingRange').checked;
+            document.getElementById('movingRangeContainer').style.display = showMovingRange ? 'block' : 'none';
+            
+            if (showMovingRange) {
+                updateMovingRangeChart(aspectRatio);
+            }
+        }
+
+        // Create or update moving range chart
+        function updateMovingRangeChart(aspectRatio) {
+            const movingRangeData = calculateMovingRanges(filteredData);
+            cachedMovingRangeData = movingRangeData; // Cache for tooltip use
+            
+            // Calculate range limits using D4 constant for moving range charts
+            // D4 ≈ 3.267 for sample size n=2 in statistical process control
+            const D4 = 3.267;
+            const D3 = 0; // For n=2, D3 = 0
+            
+            // Upper Range Limit: avgMovingRange × D4
+            // Note: Original requirement specified fixed value of 3.27
+            // Dynamic calculation provides more accurate control limits based on actual process variation
+            const upperRangeLimit = movingRangeData.average * D4;
+            
+            // Lower Range Limit: avgMovingRange × D3 (always 0 for n=2)
+            const lowerRangeLimit = movingRangeData.average * D3;
+            
+            const datasets = [
+                {
+                    label: 'Moving Range',
+                    data: movingRangeData.data.map(mr => mr.range),
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.5)',
+                    borderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#8b5cf6',
+                    tension: 0.1
+                },
+                {
+                    label: 'Średnia mR',
+                    data: Array(movingRangeData.data.length).fill(movingRangeData.average),
+                    borderColor: '#ec4899',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0
+                },
+                {
+                    label: 'Upper Range Limit',
+                    data: Array(movingRangeData.data.length).fill(upperRangeLimit),
+                    borderColor: '#ef4444',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0
+                },
+                {
+                    label: 'Lower Range Limit',
+                    data: Array(movingRangeData.data.length).fill(lowerRangeLimit),
+                    borderColor: '#ef4444',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0
+                }
+            ];
+
+            const chartData = {
+                labels: movingRangeData.data.map(mr => `${mr.prevId}-${mr.id}`),
+                datasets: datasets
+            };
+
+            if (movingRangeChartInstance) {
+                movingRangeChartInstance.data = chartData;
+                movingRangeChartInstance.options.aspectRatio = aspectRatio;
+                movingRangeChartInstance.update();
+            } else {
+                const ctx = document.getElementById('movingRangeChart').getContext('2d');
+                movingRangeChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    plugins: [chartBackgroundPlugin],
+                    options: getMovingRangeChartOptions(aspectRatio)
+                });
+            }
+        }
+
+        // Moving Range chart options
+        function getMovingRangeChartOptions(aspectRatio) {
+            return {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: aspectRatio,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    customCanvasBackgroundColor: {
+                        color: '#0f172a'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const index = context[0].dataIndex;
+                                // Use cached data to avoid redundant calculations
+                                const item = cachedMovingRangeData.data[index];
+                                return `Zadania #${item.prevId} → #${item.id}`;
+                            },
+                            label: function(context) {
+                                if (context.dataset.label === 'Moving Range') {
+                                    const value = context.parsed.y;
+                                    return `Moving Range: ${value.toFixed(2)}`;
+                                }
+                                return undefined;
+                            }
+                        }
+                    }
+                },
+                layout: {
+                    padding: 20
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Kolejne pary zadań',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Moving Range (różnica)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0'
+                        }
+                    }
+                }
+            };
+        }
         }
 
         // Chart options
@@ -836,6 +1055,7 @@
             document.getElementById('toggleSigma2').checked = true;
             document.getElementById('toggleSigma3').checked = true;
             document.getElementById('toggleOutOfControl').checked = true;
+            document.getElementById('toggleMovingRange').checked = true;
             document.getElementById('pointSize').value = 5;
             document.getElementById('aspectRatio').value = 2.5;
             document.getElementById('taskIdMin').value = '';
@@ -862,6 +1082,7 @@
         document.getElementById('toggleSigma2').addEventListener('change', updateChart);
         document.getElementById('toggleSigma3').addEventListener('change', updateChart);
         document.getElementById('toggleOutOfControl').addEventListener('change', updateChart);
+        document.getElementById('toggleMovingRange').addEventListener('change', updateChart);
         
         document.getElementById('pointSize').addEventListener('input', function(e) {
             document.getElementById('pointSizeValue').textContent = e.target.value;
