@@ -575,7 +575,7 @@
                     currentDate.setDate(currentDate.getDate() + sprintLengthDays);
                     sprintCount++;
 
-                    // Zabezpieczenie przed nieskończoną pętlą
+                    // Zabezpieczenie przed nieskończoną pętlą (200 sprintów = ~7.7 lat)
                     if (sprintCount > 200) break;
                 }
 
@@ -593,8 +593,7 @@
                 completionDates,
                 p85Date: completionDates[p85Index],
                 p95Date: completionDates[p95Index],
-                median: completionDates[Math.floor(simulations * 0.5)],
-                p50Date: completionDates[Math.floor(simulations * 0.5)]
+                median: completionDates[Math.floor(simulations * 0.5)]
             };
         }
 
