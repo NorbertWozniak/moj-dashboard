@@ -488,6 +488,18 @@
             return { mean, stdDev, min, max, n };
         }
 
+        // Calculate control limits
+        function calculateControlLimits(stats) {
+            return {
+                upperControl3: stats.mean + 3 * stats.stdDev,
+                upperControl2: stats.mean + 2 * stats.stdDev,
+                upperControl1: stats.mean + stats.stdDev,
+                lowerControl1: Math.max(0, stats.mean - stats.stdDev),
+                lowerControl2: Math.max(0, stats.mean - 2 * stats.stdDev),
+                lowerControl3: Math.max(0, stats.mean - 3 * stats.stdDev)
+            };
+        }
+
         // Filter data based on controls
         function filterData() {
             const taskIdMinInput = document.getElementById('taskIdMin').value;
@@ -499,6 +511,16 @@
             const taskIdMax = taskIdMaxInput === '' ? Infinity : parseInt(taskIdMaxInput);
             const cycleTimeMin = cycleTimeMinInput === '' ? 0 : parseInt(cycleTimeMinInput);
             const cycleTimeMax = cycleTimeMaxInput === '' ? Infinity : parseInt(cycleTimeMaxInput);
+
+            // Validate parsed values
+            if (isNaN(taskIdMin) || isNaN(taskIdMax) || isNaN(cycleTimeMin) || isNaN(cycleTimeMax)) {
+                console.warn('Invalid numeric input detected. Using default values.');
+                filteredData = allData;
+                stats = calculateStats(filteredData);
+                updateStatistics();
+                updateChart();
+                return;
+            }
 
             filteredData = allData.filter(d => 
                 d.id >= taskIdMin && 
@@ -519,9 +541,10 @@
 
         // Update statistics display
         function updateStatistics() {
-            const upperControl3 = stats.mean + 3 * stats.stdDev;
-            const lowerControl3 = Math.max(0, stats.mean - 3 * stats.stdDev);
-            const outOfControl = filteredData.filter(d => d.cycleTime > upperControl3 || d.cycleTime < lowerControl3);
+            const limits = calculateControlLimits(stats);
+            const outOfControl = filteredData.filter(d => 
+                d.cycleTime > limits.upperControl3 || d.cycleTime < limits.lowerControl3
+            );
 
             document.getElementById('meanValue').textContent = stats.mean.toFixed(1);
             document.getElementById('stdDevValue').textContent = stats.stdDev.toFixed(1);
@@ -548,12 +571,7 @@
 
         // Create or update chart
         function updateChart() {
-            const upperControl3 = stats.mean + 3 * stats.stdDev;
-            const upperControl2 = stats.mean + 2 * stats.stdDev;
-            const upperControl1 = stats.mean + stats.stdDev;
-            const lowerControl1 = Math.max(0, stats.mean - stats.stdDev);
-            const lowerControl2 = Math.max(0, stats.mean - 2 * stats.stdDev);
-            const lowerControl3 = Math.max(0, stats.mean - 3 * stats.stdDev);
+            const limits = calculateControlLimits(stats);
 
             // Get control states
             const showMean = document.getElementById('toggleMean').checked;
@@ -575,7 +593,7 @@
                     pointRadius: pointSize,
                     pointHoverRadius: pointSize + 2,
                     pointBackgroundColor: filteredData.map(d => {
-                        if (highlightOutOfControl && (d.cycleTime > upperControl3 || d.cycleTime < lowerControl3)) {
+                        if (highlightOutOfControl && (d.cycleTime > limits.upperControl3 || d.cycleTime < limits.lowerControl3)) {
                             return '#ef4444';
                         }
                         return '#3b82f6';
@@ -600,7 +618,7 @@
                 datasets.push(
                     {
                         label: '+1σ',
-                        data: Array(filteredData.length).fill(upperControl1),
+                        data: Array(filteredData.length).fill(limits.upperControl1),
                         borderColor: '#fbbf24',
                         borderWidth: 2,
                         borderDash: [5, 5],
@@ -610,7 +628,7 @@
                     },
                     {
                         label: '-1σ',
-                        data: Array(filteredData.length).fill(lowerControl1),
+                        data: Array(filteredData.length).fill(limits.lowerControl1),
                         borderColor: '#fbbf24',
                         borderWidth: 2,
                         borderDash: [5, 5],
@@ -625,7 +643,7 @@
                 datasets.push(
                     {
                         label: '+2σ',
-                        data: Array(filteredData.length).fill(upperControl2),
+                        data: Array(filteredData.length).fill(limits.upperControl2),
                         borderColor: '#f97316',
                         borderWidth: 2,
                         borderDash: [5, 5],
@@ -635,7 +653,7 @@
                     },
                     {
                         label: '-2σ',
-                        data: Array(filteredData.length).fill(lowerControl2),
+                        data: Array(filteredData.length).fill(limits.lowerControl2),
                         borderColor: '#f97316',
                         borderWidth: 2,
                         borderDash: [5, 5],
@@ -650,7 +668,7 @@
                 datasets.push(
                     {
                         label: '+3σ',
-                        data: Array(filteredData.length).fill(upperControl3),
+                        data: Array(filteredData.length).fill(limits.upperControl3),
                         borderColor: '#ef4444',
                         borderWidth: 2,
                         borderDash: [10, 5],
@@ -660,7 +678,7 @@
                     },
                     {
                         label: '-3σ',
-                        data: Array(filteredData.length).fill(lowerControl3),
+                        data: Array(filteredData.length).fill(limits.lowerControl3),
                         borderColor: '#ef4444',
                         borderWidth: 2,
                         borderDash: [10, 5],
@@ -723,15 +741,12 @@
                             label: function(context) {
                                 if (context.dataset.label === 'Czas realizacji') {
                                     const value = context.parsed.y;
-                                    const upperControl3 = stats.mean + 3 * stats.stdDev;
-                                    const upperControl2 = stats.mean + 2 * stats.stdDev;
-                                    const lowerControl3 = Math.max(0, stats.mean - 3 * stats.stdDev);
-                                    const lowerControl2 = Math.max(0, stats.mean - 2 * stats.stdDev);
+                                    const limits = calculateControlLimits(stats);
                                     
                                     let status = '';
-                                    if (value > upperControl3 || value < lowerControl3) {
+                                    if (value > limits.upperControl3 || value < limits.lowerControl3) {
                                         status = ' ⚠️ POZA KONTROLĄ';
-                                    } else if (value > upperControl2 || value < lowerControl2) {
+                                    } else if (value > limits.upperControl2 || value < limits.lowerControl2) {
                                         status = ' ⚡ Wysoka zmienność';
                                     }
                                     return `Czas realizacji: ${value} dni${status}`;
