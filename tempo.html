@@ -450,10 +450,10 @@
             
             // Calculate corridor thresholds
             const range = unpl - lnpl;
-            const upperThird = median + range / 6;
-            const lowerThird = median - range / 6;
-            const upperTwoThirds = median + range / 3;
-            const lowerTwoThirds = median - range / 3;
+            const upperOneThirdBoundary = median + range / 6;
+            const lowerOneThirdBoundary = median - range / 6;
+            const upperTwoThirdsBoundary = median + range / 3;
+            const lowerTwoThirdsBoundary = median - range / 3;
 
             for (let i = 0; i < values.length; i++) {
                 // Priority 1: Strong signals (red) - outside UNPL/LNPL
@@ -466,14 +466,17 @@
                 if (i >= 2) {
                     let countOutside = 0;
                     for (let j = i - 2; j <= i; j++) {
-                        if (values[j] > upperTwoThirds || values[j] < lowerTwoThirds) {
+                        if (values[j] > upperTwoThirdsBoundary || values[j] < lowerTwoThirdsBoundary) {
                             countOutside++;
                         }
                     }
                     if (countOutside >= 2) {
-                        if (!signals[i]) signals[i] = 'orange';
-                        if (!signals[i-1]) signals[i-1] = 'orange';
-                        if (!signals[i-2]) signals[i-2] = 'orange';
+                        // Only mark the points that are actually outside
+                        for (let j = i - 2; j <= i; j++) {
+                            if ((values[j] > upperTwoThirdsBoundary || values[j] < lowerTwoThirdsBoundary) && !signals[j]) {
+                                signals[j] = 'orange';
+                            }
+                        }
                         continue;
                     }
                 }
@@ -482,13 +485,16 @@
                 if (i >= 4) {
                     let countOutside = 0;
                     for (let j = i - 4; j <= i; j++) {
-                        if (values[j] > upperThird || values[j] < lowerThird) {
+                        if (values[j] > upperOneThirdBoundary || values[j] < lowerOneThirdBoundary) {
                             countOutside++;
                         }
                     }
                     if (countOutside >= 3) {
+                        // Only mark the points that are actually outside
                         for (let j = i - 4; j <= i; j++) {
-                            if (!signals[j]) signals[j] = 'yellow';
+                            if ((values[j] > upperOneThirdBoundary || values[j] < lowerOneThirdBoundary) && !signals[j]) {
+                                signals[j] = 'yellow';
+                            }
                         }
                         continue;
                     }
@@ -499,8 +505,8 @@
                     let allAbove = true;
                     let allBelow = true;
                     for (let j = i - 7; j <= i; j++) {
-                        if (values[j] <= median) allAbove = false;
-                        if (values[j] >= median) allBelow = false;
+                        if (values[j] < median) allAbove = false;
+                        if (values[j] > median) allBelow = false;
                     }
                     if (allAbove || allBelow) {
                         for (let j = i - 7; j <= i; j++) {
