@@ -441,6 +441,10 @@
         }
 
         // Detect signals
+        // Note: Signals are assigned with priority - once a higher priority signal is found,
+        // lower priority signals are not checked for that iteration. However, earlier points
+        // in a window can still be re-evaluated in subsequent iterations, which is intentional
+        // to allow for overlapping detection windows.
         function detectSignals(data, stats) {
             const signals = data.map(() => null);
             const values = data.map(d => d.value);
@@ -501,6 +505,7 @@
                 }
 
                 // Priority 4: Persistent change (gray) - 8 consecutive values on one side of median
+                // Uses strict inequality (< and >) so that values exactly at the median break the pattern
                 if (i >= 7) {
                     let allAbove = true;
                     let allBelow = true;
