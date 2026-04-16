@@ -304,11 +304,11 @@
                 </div>
                 <div class="control-item">
                     <span class="control-label">Rozmiar punktów: <span class="range-value" id="pointSizeValue">5</span></span>
-                    <input type="range" id="pointSize" min="2" max="10" value="5" step="1">
+                    <input type="range" id="pointSize" min="2" max="10" value="5" step="1" aria-label="Rozmiar punktów na wykresie">
                 </div>
                 <div class="control-item">
                     <span class="control-label">Proporcje wykresu: <span class="range-value" id="aspectRatioValue">2.5</span></span>
-                    <input type="range" id="aspectRatio" min="1.5" max="4" value="2.5" step="0.1">
+                    <input type="range" id="aspectRatio" min="1.5" max="4" value="2.5" step="0.1" aria-label="Proporcje wykresu">
                 </div>
             </div>
 
@@ -317,15 +317,15 @@
                 <div class="control-item">
                     <span class="control-label">Zakres ID zadań:</span>
                     <div class="filter-range">
-                        <input type="number" id="taskIdMin" placeholder="Min" min="1">
-                        <input type="number" id="taskIdMax" placeholder="Max" min="1">
+                        <input type="number" id="taskIdMin" placeholder="Min" min="1" aria-label="Minimalne ID zadania">
+                        <input type="number" id="taskIdMax" placeholder="Max" min="1" aria-label="Maksymalne ID zadania">
                     </div>
                 </div>
                 <div class="control-item">
                     <span class="control-label">Zakres czasu realizacji (dni):</span>
                     <div class="filter-range">
-                        <input type="number" id="cycleTimeMin" placeholder="Min" min="0">
-                        <input type="number" id="cycleTimeMax" placeholder="Max" min="0">
+                        <input type="number" id="cycleTimeMin" placeholder="Min" min="0" aria-label="Minimalny czas realizacji w dniach">
+                        <input type="number" id="cycleTimeMax" placeholder="Max" min="0" aria-label="Maksymalny czas realizacji w dniach">
                     </div>
                 </div>
             </div>
