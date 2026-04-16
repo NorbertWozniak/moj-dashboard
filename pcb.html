@@ -333,7 +333,7 @@
             <div class="control-group">
                 <h3>Akcje</h3>
                 <div class="control-item">
-                    <button class="btn-reset" onclick="resetControls()">Przywróć domyślne ustawienia</button>
+                    <button class="btn-reset" id="resetBtn">Przywróć domyślne ustawienia</button>
                 </div>
             </div>
         </div>
@@ -455,7 +455,7 @@
 30;3.20.2024;4.9.2024;20`;
 
         // Global variables
-        let pcbChart = null;
+        let chartInstance = null;
         let allData = [];
         let filteredData = [];
         let stats = {};
@@ -490,10 +490,15 @@
 
         // Filter data based on controls
         function filterData() {
-            const taskIdMin = parseInt(document.getElementById('taskIdMin').value) || 0;
-            const taskIdMax = parseInt(document.getElementById('taskIdMax').value) || Infinity;
-            const cycleTimeMin = parseInt(document.getElementById('cycleTimeMin').value) || 0;
-            const cycleTimeMax = parseInt(document.getElementById('cycleTimeMax').value) || Infinity;
+            const taskIdMinInput = document.getElementById('taskIdMin').value;
+            const taskIdMaxInput = document.getElementById('taskIdMax').value;
+            const cycleTimeMinInput = document.getElementById('cycleTimeMin').value;
+            const cycleTimeMaxInput = document.getElementById('cycleTimeMax').value;
+
+            const taskIdMin = taskIdMinInput === '' ? 0 : parseInt(taskIdMinInput);
+            const taskIdMax = taskIdMaxInput === '' ? Infinity : parseInt(taskIdMaxInput);
+            const cycleTimeMin = cycleTimeMinInput === '' ? 0 : parseInt(cycleTimeMinInput);
+            const cycleTimeMax = cycleTimeMaxInput === '' ? Infinity : parseInt(cycleTimeMaxInput);
 
             filteredData = allData.filter(d => 
                 d.id >= taskIdMin && 
@@ -503,6 +508,7 @@
             );
 
             if (filteredData.length === 0) {
+                console.warn('No data matches the current filters. Showing all data.');
                 filteredData = allData;
             }
 
@@ -670,13 +676,13 @@
                 datasets: datasets
             };
 
-            if (pcbChart) {
-                pcbChart.data = chartData;
-                pcbChart.options.aspectRatio = aspectRatio;
-                pcbChart.update();
+            if (chartInstance) {
+                chartInstance.data = chartData;
+                chartInstance.options.aspectRatio = aspectRatio;
+                chartInstance.update();
             } else {
                 const ctx = document.getElementById('pcbChart').getContext('2d');
-                pcbChart = new Chart(ctx, {
+                chartInstance = new Chart(ctx, {
                     type: 'line',
                     data: chartData,
                     plugins: [chartBackgroundPlugin],
@@ -847,6 +853,9 @@
         document.getElementById('taskIdMax').addEventListener('change', filterData);
         document.getElementById('cycleTimeMin').addEventListener('change', filterData);
         document.getElementById('cycleTimeMax').addEventListener('change', filterData);
+
+        // Event listener for reset button
+        document.getElementById('resetBtn').addEventListener('click', resetControls);
     </script>
 </body>
 </html>
