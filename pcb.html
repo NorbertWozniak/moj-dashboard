@@ -777,10 +777,10 @@
             cachedMovingRangeData = movingRangeData; // Cache for tooltip use
             // Range limits as specified in requirements
             // Note: upperRangeLimit based on D4 constant for moving range charts (D4 ≈ 3.267 for n=2)
-            const upperRangeLimit = 3.27; // URL (Upper Range Limit)
+            const upperRangeLimit = 3.27; // Upper Range Limit (URangeL)
             // Note: lowerRangeLimit is set to 0 as moving ranges are absolute values and cannot be negative
             // The original requirement specified -3.27, but this is adjusted to 0 for correctness
-            const lowerRangeLimit = 0; // LRL (Lower Range Limit)
+            const lowerRangeLimit = 0; // Lower Range Limit (LRangeL)
             
             const datasets = [
                 {
@@ -804,7 +804,7 @@
                     tension: 0
                 },
                 {
-                    label: 'URL (Upper Range Limit)',
+                    label: 'Upper Range Limit',
                     data: Array(movingRangeData.data.length).fill(upperRangeLimit),
                     borderColor: '#ef4444',
                     borderWidth: 2,
@@ -814,7 +814,7 @@
                     tension: 0
                 },
                 {
-                    label: 'LRL (Lower Range Limit)',
+                    label: 'Lower Range Limit',
                     data: Array(movingRangeData.data.length).fill(lowerRangeLimit),
                     borderColor: '#ef4444',
                     borderWidth: 2,
