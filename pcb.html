@@ -281,12 +281,6 @@
             });
         }
 
-        // Parse date to timestamp
-        function parseDate(dateStr) {
-            const [month, day, year] = dateStr.split('.');
-            return new Date(year, month - 1, day);
-        }
-
         // Calculate statistics
         function calculateStats(data) {
             const values = data.map(d => d.cycleTime);
@@ -483,7 +477,7 @@
                                     }
                                     return `Czas realizacji: ${value} dni${status}`;
                                 }
-                                return null;
+                                return undefined;
                             },
                             footer: function(context) {
                                 const value = context[0].parsed.y;
