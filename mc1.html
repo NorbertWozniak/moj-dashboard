@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symulacja Monte Carlo - Prognoza Dostarczenia</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .subtitle {
+            text-align: center;
+            color: #b0b0b0;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .info-box {
+            background-color: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+        .info-box h2 {
+            color: #4a90e2;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .info-item {
+            background-color: rgba(74, 144, 226, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4a90e2;
+        }
+        .info-label {
+            color: #b0b0b0;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #ffffff;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        .results-box {
+            background-color: #16213e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+        .results-box h2 {
+            color: #4a90e2;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+        .answer-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #4a90e2;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .answer-question {
+            color: #4a90e2;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        .answer-value {
+            color: #ffffff;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            background-color: rgba(74, 144, 226, 0.2);
+            border-radius: 8px;
+        }
+        .answer-details {
+            color: #b0b0b0;
+            font-size: 0.9em;
+            margin-top: 10px;
+            text-align: center;
+        }
+        #chartContainer {
+            background-color: #16213e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+        .chart-title {
+            color: #4a90e2;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background-color: rgba(74, 144, 226, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-label {
+            color: #b0b0b0;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            color: #4a90e2;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .percentile-box {
+            background-color: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+        .percentile-title {
+            color: #4a90e2;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        th {
+            background-color: rgba(74, 144, 226, 0.2);
+            color: #4a90e2;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: rgba(74, 144, 226, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Symulacja Monte Carlo</h1>
+        <div class="subtitle">Prognoza Dostarczenia - 10,000 Scenariuszy</div>
+        
+        <div class="info-box">
+            <h2>Parametry Wejściowe</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Elementy w backlogu</div>
+                    <div class="info-value" id="backlogItems">62</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Data rozpoczęcia</div>
+                    <div class="info-value">1 maja 2026</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Liczba symulacji</div>
+                    <div class="info-value">10,000</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Długość sprintu</div>
+                    <div class="info-value">2 tygodnie</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <div class="info-label" style="margin-bottom: 10px;">Historyczna przepustowość (items/sprint):</div>
+                <div class="info-value" id="historicalThroughput" style="font-size: 1.1em; color: #4a90e2;">5, 4, 4, 5, 6, 4, 2, 3, 2, 5, 6</div>
+            </div>
+        </div>
+
+        <div class="results-box">
+            <h2>🎯 Odpowiedzi na Pytania</h2>
+            
+            <div class="answer-card">
+                <div class="answer-question">1. Data ukończenia 85% backlogu (53 elementów)</div>
+                <div class="answer-value" id="answer85"></div>
+                <div class="answer-details" id="answer85Details"></div>
+            </div>
+            
+            <div class="answer-card">
+                <div class="answer-question">2. Data ukończenia 100% backlogu (62 elementów)</div>
+                <div class="answer-value" id="answer100"></div>
+                <div class="answer-details" id="answer100Details"></div>
+            </div>
+            
+            <div class="answer-card">
+                <div class="answer-question">3. Liczba elementów do końca sierpnia 2026 r.</div>
+                <div class="answer-value" id="answerAugust"></div>
+                <div class="answer-details" id="answerAugustDetails"></div>
+            </div>
+        </div>
+
+        <div id="chartContainer">
+            <h3 class="chart-title">Rozkład Dat Ukończenia (wszystkie 62 elementy)</h3>
+            <canvas id="completionChart"></canvas>
+        </div>
+
+        <div class="percentile-box">
+            <h3 class="percentile-title">Percentyle Dat Ukończenia</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Percentyl</th>
+                        <th>Data ukończenia 53 elementów (85%)</th>
+                        <th>Data ukończenia 62 elementów (100%)</th>
+                    </tr>
+                </thead>
+                <tbody id="percentilesTable">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="info-box">
+            <h2>Statystyki Symulacji</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Średnia przepustowość</div>
+                    <div class="stat-value" id="avgThroughput"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Mediana przepustowości</div>
+                    <div class="stat-value" id="medianThroughput"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Odchylenie standardowe</div>
+                    <div class="stat-value" id="stdDevThroughput"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Min przepustowość</div>
+                    <div class="stat-value" id="minThroughput"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Max przepustowość</div>
+                    <div class="stat-value" id="maxThroughput"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Parametry wejściowe
+        const backlogSize = 62;
+        const targetItems85 = Math.ceil(backlogSize * 0.85); // 53 elementy
+        const historicalThroughput = [5, 4, 4, 5, 6, 4, 2, 3, 2, 5, 6];
+        const startDate = new Date(2026, 4, 1); // 1 maja 2026 (miesiące są 0-indexed)
+        const augustEndDate = new Date(2026, 7, 31); // 31 sierpnia 2026
+        const numSimulations = 10000;
+        const sprintLengthWeeks = 2;
+
+        // Funkcja pomocnicza do dodawania dni do daty
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+
+        // Funkcja pomocnicza do formatowania daty
+        function formatDate(date) {
+            const months = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 
+                          'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
+            return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        // Funkcja do losowania z historycznej przepustowości
+        function sampleThroughput() {
+            return historicalThroughput[Math.floor(Math.random() * historicalThroughput.length)];
+        }
+
+        // Funkcja do symulacji jednego scenariusza
+        function runSimulation() {
+            let itemsCompleted = 0;
+            let sprintCount = 0;
+            const results = {
+                completionDate85: null,
+                completionDate100: null,
+                itemsByAugustEnd: 0
+            };
+
+            while (itemsCompleted < backlogSize) {
+                const throughput = sampleThroughput();
+                itemsCompleted += throughput;
+                sprintCount++;
+
+                const currentDate = addDays(startDate, sprintCount * sprintLengthWeeks * 7);
+
+                // Sprawdź czy osiągnęliśmy 85%
+                if (results.completionDate85 === null && itemsCompleted >= targetItems85) {
+                    results.completionDate85 = currentDate;
+                }
+
+                // Sprawdź czy osiągnęliśmy 100%
+                if (itemsCompleted >= backlogSize) {
+                    results.completionDate100 = currentDate;
+                }
+
+                // Policz ile zrobiliśmy do końca sierpnia
+                if (currentDate <= augustEndDate) {
+                    results.itemsByAugustEnd = itemsCompleted;
+                }
+            }
+
+            return results;
+        }
+
+        // Uruchom wszystkie symulacje
+        console.log('Rozpoczynam symulację Monte Carlo...');
+        const simulationResults = {
+            dates85: [],
+            dates100: [],
+            itemsByAugust: []
+        };
+
+        for (let i = 0; i < numSimulations; i++) {
+            const result = runSimulation();
+            simulationResults.dates85.push(result.completionDate85);
+            simulationResults.dates100.push(result.completionDate100);
+            simulationResults.itemsByAugust.push(Math.min(result.itemsByAugustEnd, backlogSize));
+        }
+
+        console.log('Symulacja zakończona!');
+
+        // Funkcja do obliczania percentyla
+        function getPercentile(sortedArray, percentile) {
+            const index = Math.ceil((percentile / 100) * sortedArray.length) - 1;
+            return sortedArray[index];
+        }
+
+        // Sortuj wyniki
+        simulationResults.dates85.sort((a, b) => a - b);
+        simulationResults.dates100.sort((a, b) => a - b);
+        simulationResults.itemsByAugust.sort((a, b) => a - b);
+
+        // Oblicz odpowiedzi (używamy 85 percentyla dla dat - konserwatywna prognoza)
+        const answer85Date = getPercentile(simulationResults.dates85, 85);
+        const answer100Date = getPercentile(simulationResults.dates100, 85);
+        const answerAugustItems = Math.floor(simulationResults.itemsByAugust.reduce((a, b) => a + b, 0) / numSimulations);
+
+        // Wyświetl odpowiedzi
+        document.getElementById('answer85').textContent = formatDate(answer85Date);
+        document.getElementById('answer85Details').textContent = 
+            `(85% pewności - 53 z 62 elementów)`;
+
+        document.getElementById('answer100').textContent = formatDate(answer100Date);
+        document.getElementById('answer100Details').textContent = 
+            `(85% pewności - wszystkie 62 elementy)`;
+
+        document.getElementById('answerAugust').textContent = answerAugustItems + ' elementów';
+        const percentageByAugust = ((answerAugustItems / backlogSize) * 100).toFixed(1);
+        document.getElementById('answerAugustDetails').textContent = 
+            `(${percentageByAugust}% backlogu - średnia ze wszystkich symulacji)`;
+
+        // Oblicz statystyki przepustowości
+        const avgThroughput = (historicalThroughput.reduce((a, b) => a + b, 0) / historicalThroughput.length).toFixed(2);
+        const sortedThroughput = [...historicalThroughput].sort((a, b) => a - b);
+        const medianThroughput = sortedThroughput[Math.floor(sortedThroughput.length / 2)];
+        const variance = historicalThroughput.reduce((sum, val) => sum + Math.pow(val - avgThroughput, 2), 0) / historicalThroughput.length;
+        const stdDev = Math.sqrt(variance).toFixed(2);
+
+        document.getElementById('avgThroughput').textContent = avgThroughput;
+        document.getElementById('medianThroughput').textContent = medianThroughput;
+        document.getElementById('stdDevThroughput').textContent = stdDev;
+        document.getElementById('minThroughput').textContent = Math.min(...historicalThroughput);
+        document.getElementById('maxThroughput').textContent = Math.max(...historicalThroughput);
+
+        // Wypełnij tabelę percentyli
+        const percentiles = [50, 70, 85, 95];
+        const percentilesTableBody = document.getElementById('percentilesTable');
+        percentiles.forEach(p => {
+            const row = document.createElement('tr');
+            const date85 = getPercentile(simulationResults.dates85, p);
+            const date100 = getPercentile(simulationResults.dates100, p);
+            
+            row.innerHTML = `
+                <td>${p}%</td>
+                <td>${formatDate(date85)}</td>
+                <td>${formatDate(date100)}</td>
+            `;
+            percentilesTableBody.appendChild(row);
+        });
+
+        // Przygotuj dane do wykresu - histogram dat ukończenia 100%
+        function createHistogramData(dates) {
+            const dateCounts = {};
+            dates.forEach(date => {
+                const dateStr = formatDate(date);
+                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
+            });
+
+            // Sortuj daty
+            const sortedDates = Object.keys(dateCounts).sort((a, b) => {
+                const dateA = dates.find(d => formatDate(d) === a);
+                const dateB = dates.find(d => formatDate(d) === b);
+                return dateA - dateB;
+            });
+
+            // Grupuj po tygodniach dla czytelności (jeśli jest zbyt wiele dat)
+            const uniqueDates = sortedDates.length;
+            if (uniqueDates > 30) {
+                // Grupuj po miesiącach
+                const monthCounts = {};
+                dates.forEach(date => {
+                    const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
+                    monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+                });
+                
+                const months = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 
+                              'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
+                const sortedMonths = Object.keys(monthCounts).sort((a, b) => {
+                    const [mA, yA] = a.split('/').map(Number);
+                    const [mB, yB] = b.split('/').map(Number);
+                    return yA !== yB ? yA - yB : mA - mB;
+                });
+                
+                return {
+                    labels: sortedMonths.map(m => {
+                        const [month, year] = m.split('/').map(Number);
+                        return `${months[month - 1]} ${year}`;
+                    }),
+                    data: sortedMonths.map(m => monthCounts[m])
+                };
+            } else {
+                return {
+                    labels: sortedDates,
+                    data: sortedDates.map(d => dateCounts[d])
+                };
+            }
+        }
+
+        const histogramData = createHistogramData(simulationResults.dates100);
+
+        // Utwórz wykres
+        const ctx = document.getElementById('completionChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: histogramData.labels,
+                datasets: [{
+                    label: 'Liczba symulacji',
+                    data: histogramData.data,
+                    backgroundColor: 'rgba(74, 144, 226, 0.7)',
+                    borderColor: 'rgba(74, 144, 226, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#e0e0e0',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const percentage = ((context.parsed.y / numSimulations) * 100).toFixed(1);
+                                return `${context.parsed.y} symulacji (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#e0e0e0',
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Liczba symulacji',
+                            color: '#4a90e2',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Wykres utworzony pomyślnie!');
+    </script>
+</body>
+</html>
